@@ -1,0 +1,79 @@
+$arResult = [];
+//собираем собранные
+$filterZakazy = [];
+$zakazy = [];
+$ids = [];
+$idsSKU = [];
+$resSKU = [];
+$arrIds = [];
+$arrIdsSKU = [];
+$filterZakazy["UF_CHECK_SOBRAN"] = true;
+$filterZakazy[">UF_DATE_SOBRAN"] = date("d.m.Y H:i:s", mktime(0, 0, 0, date("m"), date("d")));
+foreach ($site as $keyId => $valSite) {
+	$filterZakazy["=UF_SITE"] = $keyId;
+
+	$zakazy[$keyId] = Local\Hlblock\Basket::getList('ID', ['filter'=>$filterZakazy, 'order'=>["ID"=>"ASC"]], true);
+}
+
+
+foreach ($zakazy as $siteId => $valId) {
+	if(!empty(array_filter(array_column($valId, 'UF_PRODUCT_ID')))){
+
+		$order =  array("ID" => "ASC");
+		$select =  array(
+			"ID",
+			"IBLOCK_ID",
+			"XML_ID",
+			"PROPERTY_SOLD",
+			"PROPERTY_NO_SIZE",
+            "PROPERTY_IB_PROVIDER",
+            "PROPERTY_PROVIDERS_SADOVOD"
+		);
+		$filter['IBLOCK_ID'] = $site[$siteId]['UF_IBLOCK'];
+		$filter['XML_ID'] = array_filter(array_column($valId, 'UF_PRODUCT_ID'));
+		$res = \CIBlockElement::GetList(
+		    $order,
+		    $filter,
+		    false,
+		    false,
+		    $select
+		    );
+		  
+		while($ob = $res->GetNext())
+	    {
+	    	$arrIds[$ob['IBLOCK_ID']][$ob['XML_ID']] = $ob;
+	    	$ids[] = $ob['ID'];
+	    }
+	}
+
+	if(!empty(array_filter(array_column($valId, 'UF_SKU_ID')))){
+
+  		$arFilter = array(
+  			"XML_ID" => array_filter(array_column($valId, 'UF_SKU_ID')),
+  			"IBLOCK_ID" => $site[$siteId]['UF_IBLOCK_TP']
+  		);
+
+		$arSelect = array(
+			'ID',
+			'IBLOCK_ID',
+			'PROPERTY_COUNT_OFFER',
+			'XML_ID'
+			);
+
+		$res = \CIBlockElement::GetList(
+		    ["ID" => "ASC"],
+		    $arFilter,
+		    false,
+		    false,
+		    $arSelect
+		    );
+		  
+		while($ob = $res->GetNext())
+		    {
+		    	// $arFields = $ob->GetFields();
+		    	$arrIdsSKU[$ob['IBLOCK_ID']][$ob['XML_ID']] = $ob;
+				// $countOffers[$arFields['ID']] =  preg_replace("/[^0-9]/", '', $arFields['PROPERTY_COUNT_OFFER_VALUE']); 
+				$idsSKU[] = $ob['ID'];
+		    }
+	}	
+}
